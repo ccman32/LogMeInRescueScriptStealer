@@ -97,11 +97,9 @@ namespace LogMeInRescueScriptStealerGUI.Model
             setAppInitDllsEntries32(appInitDllsEntries32);
 
             setLoadAppInitDllsValue(getAppInitDllsKey32());
-
-            MessageBox.Show("Successfully installed LogMeIn Rescue Script Stealer!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        public static void Uninstall()
+        public static bool Uninstall()
         {
             bool appInitDllEntryFound = checkAppInitDllsKeysExist();
             bool installationFileExists = checkInstallationFilesExist();
@@ -123,24 +121,13 @@ namespace LogMeInRescueScriptStealerGUI.Model
                 catch (UnauthorizedAccessException)
                 {
                     systemRestartRequired = true;
-
-                    if (!NativeMethods.MoveFileEx(installationIniFileName, null, MoveFileFlags.DelayUntilReboot)
-                        || !NativeMethods.MoveFileEx(installationFileName32, null, MoveFileFlags.DelayUntilReboot)
-                        || !NativeMethods.MoveFileEx(installationFilePath, null, MoveFileFlags.DelayUntilReboot))
-                    {
-                        MessageBox.Show("Failed to schedule the installation folder for deletion!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
+                    NativeMethods.MoveFileEx(installationIniFileName, null, MoveFileFlags.DelayUntilReboot);
+                    NativeMethods.MoveFileEx(installationFileName32, null, MoveFileFlags.DelayUntilReboot);
+                    NativeMethods.MoveFileEx(installationFilePath, null, MoveFileFlags.DelayUntilReboot);
                 }
             }
 
-            MessageBox.Show("Successfully uninstalled LogMeIn Rescue Script Stealer!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-            if (systemRestartRequired
-                && MessageBox.Show("In order to complete the uninstall process you must restart your computer.\nDo you want to restart your computer now?",
-                "LogMeIn Rescue Script Stealer", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-            {
-                RestartComputer();
-            }
+            return systemRestartRequired;
         }
 
         public static string GetInstallationIniFileName()

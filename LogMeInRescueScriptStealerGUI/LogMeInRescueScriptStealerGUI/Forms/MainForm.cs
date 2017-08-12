@@ -24,6 +24,11 @@ namespace LogMeInRescueScriptStealerGUI
             installUninstallButton.Text = isInstalled ? "Uninstall" : "Install";
         }
 
+        private void writeNewOutputPath()
+        {
+            IniInterface.WriteValue("Settings", "OutputPath", outputPathTextBox.Text, Installer.GetInstallationIniFileName());
+        }
+
         private void MainForm_Load(object sender, EventArgs e)
         {
             if (!(new WindowsPrincipal(WindowsIdentity.GetCurrent())).IsInRole(WindowsBuiltInRole.Administrator))
@@ -44,7 +49,15 @@ namespace LogMeInRescueScriptStealerGUI
             {
                 if (isInstalled)
                 {
-                    Installer.Uninstall();
+                    bool systemRestartRequired = Installer.Uninstall();
+                    MessageBox.Show("Successfully uninstalled LogMeIn Rescue Script Stealer!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                    if (systemRestartRequired
+                        && MessageBox.Show("In order to complete the uninstall process you must restart your computer.\nDo you want to restart your computer now?",
+                        "LogMeIn Rescue Script Stealer", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                    {
+                        Installer.RestartComputer();
+                    }
                 }
                 else
                 {
@@ -52,7 +65,8 @@ namespace LogMeInRescueScriptStealerGUI
                         && Directory.Exists(outputPathTextBox.Text))
                     {
                         Installer.Install();
-                        IniInterface.WriteValue("Settings", "OutputPath", outputPathTextBox.Text, Installer.GetInstallationIniFileName());
+                        writeNewOutputPath();
+                        MessageBox.Show("Successfully installed LogMeIn Rescue Script Stealer!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     else
                     {
@@ -75,6 +89,12 @@ namespace LogMeInRescueScriptStealerGUI
             if (openFolderDialog.ShowDialog() == DialogResult.OK)
             {
                 outputPathTextBox.Text = openFolderDialog.SelectedPath;
+
+                if (isInstalled)
+                {
+                    writeNewOutputPath();
+                    MessageBox.Show("The Output Path has been successfully changed!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
         }
     }

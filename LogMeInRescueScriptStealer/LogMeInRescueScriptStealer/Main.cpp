@@ -1,4 +1,6 @@
 #include <Windows.h>
+#include <stdlib.h>
+#include <string.h>  
 
 #include "HackingTools\HookingTools.hpp"
 
@@ -49,6 +51,14 @@ HINSTANCE __stdcall hkCreateProcessW(
 		HANDLE hFind;
 		wchar_t wlogMeInDirectory[MAX_PATH];
 
+		ZeroMemory(
+			wlogMeInDirectory,
+
+			sizeof(
+				wlogMeInDirectory
+				)
+		);
+
 		wcscat_s(
 			wlogMeInDirectory,
 			lpCurrentDirectory
@@ -68,6 +78,13 @@ HINSTANCE __stdcall hkCreateProcessW(
 			hFind != INVALID_HANDLE_VALUE
 			)
 		{
+			WritePrivateProfileStringW(
+				L"Settings",
+				L"FindFirstFileLastError",
+				L"0",
+				wIniFileName
+			);
+
 			wchar_t wResult[255];
 
 			GetPrivateProfileStringW(
@@ -91,6 +108,22 @@ HINSTANCE __stdcall hkCreateProcessW(
 				{
 					wchar_t wOldFileName[MAX_PATH];
 					wchar_t wNewFileName[MAX_PATH];
+
+					ZeroMemory(
+						wOldFileName,
+
+						sizeof(
+							wOldFileName
+							)
+					);
+
+					ZeroMemory(
+						wNewFileName,
+
+						sizeof(
+							wNewFileName
+							)
+					);
 
 					wcscat_s(
 						wOldFileName,
@@ -122,11 +155,32 @@ HINSTANCE __stdcall hkCreateProcessW(
 						findFileData.cFileName
 					);
 
-					CopyFileW(
-						wOldFileName,
-						wNewFileName,
-						FALSE
-					);
+					if (
+						!CopyFileW(
+							wOldFileName,
+							wNewFileName,
+							FALSE)
+						)
+					{
+						wchar_t wLastError[10];
+						_itow_s(GetLastError(), wLastError, 10);
+
+						WritePrivateProfileStringW(
+							L"Settings",
+							L"CopyFileLastError",
+							wLastError,
+							wIniFileName
+						);
+					}
+					else
+					{
+						WritePrivateProfileStringW(
+							L"Settings",
+							L"CopyFileLastError",
+							L"0",
+							wIniFileName
+						);
+					}
 				}
 
 			} while (
@@ -137,6 +191,18 @@ HINSTANCE __stdcall hkCreateProcessW(
 				);
 
 			FindClose(hFind);
+		}
+		else
+		{
+			wchar_t wLastError[10];
+			_itow_s(GetLastError(), wLastError, 10);
+
+			WritePrivateProfileStringW(
+				L"Settings",
+				L"FindFirstFileLastError",
+				wLastError,
+				wIniFileName
+			);
 		}
 	}
 
@@ -254,6 +320,10 @@ BOOL WINAPI DllMain(
 				wcscmp(
 					pCutoff,
 					L"LMI_Rescue.exe"
+				)
+				&& wcscmp(
+					pCutoff,
+					L"LMI_Rescue_srv.exe"
 				)
 				)
 				return FALSE;
